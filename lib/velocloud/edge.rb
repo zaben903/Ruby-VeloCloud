@@ -48,33 +48,76 @@ module VeloCloud
     attribute :software_version, type: String
     attribute :system_up_since, type: DateTime
     # Edge::Configuration
-    attribute :configuration, type: Object
+    attribute :configuration
     # Enterprise
-    attribute :enterprise, type: Object
+    attribute :enterprise
     # Edge::Link
     attribute :links, default: []
     # Edge::Link
     attribute :recent_links, default: []
     # Edge::Site
-    attribute :site, type: Object
+    attribute :site
+
+    def configuration=(configuration)
+      if configuration.is_a? Hash
+        super VeloCloud::Edge::Configuration.new configuration
+      elsif configuration.is_a? VeloCloud::Edge::Configuration
+        super configuration
+      else
+        raise ArgumentError.new 'Expected a Hash or a VeloCloud::Edge::Configuration'
+      end
+    end
+
+    def enterprise=(enterprise)
+      if enterprise.is_a? Hash
+        super VeloCloud::Enterprise.new enterprise
+      elsif enterprise.is_a? VeloCloud::Enterprise
+        super enterprise
+      else
+        raise ArgumentError.new 'Expected a Hash or a VeloCloud::Enterprise'
+      end
+    end
+
+    def links=(links)
+      super links_insert links
+    end
+
+    def recent_links=(recent_links)
+      super links_insert recent_links
+    end
+
+    def site=(site)
+      if site.is_a? Hash
+        super VeloCloud::Edge::Site.new site
+      elsif site.is_a? VeloCloud::Edge::Site
+        super site
+      else
+        raise ArgumentError.new 'Expected a Hash or a VeloCloud::Edge::Site'
+      end
+    end
 
     def self.get(params = {})
+      params[:with] = [:configuration, :enterprise, :links, :recent_links, :site] if params[:with] == [:all]
       response = VeloCloud::Query.request('/edge/getEdge', params)
-      edge = Edge.new response
-      edge.configuration = Edge::Configuration.new response[:configuration] if response[:configuration]
-      edge.enterprise = VeloCloud::Enterprise.new response[:enterprise] if response[:enterprise]
-      if response[:links]
-        edge.links = response[:links].collect do |link|
-          Edge::Link.new(link)
+      VeloCloud::Edge.new response
+    end
+
+    private
+
+    def links_insert(to_return)
+      if to_return.is_a?(Array) && !to_return.empty?
+        if to_return.first.is_a? Hash
+          return to_return.collect {|link| VeloCloud::Edge::Link.new(link)}
+        elsif to_return.first.is_a? VeloCloud::Edge::Link
+          return to_return
+        else
+          raise ArgumentError.new 'Expected an Array[VeloCloud::Edge::Link] or VeloCloud::Edge::Link'
         end
+      elsif to_return.is_a? VeloCloud::Edge::Link
+        return [to_return]
+      else
+        raise ArgumentError.new 'Expected an Array[VeloCloud::Edge::Link] or VeloCloud::Edge::Link'
       end
-      if response[:recent_links]
-        edge.recent_links = response[:recent_links].collect do |link|
-          Edge::Link.new(link)
-        end
-      end
-      edge.site = Edge::Site.new response[:site] if response[:site]
-      edge
     end
   end
 end
