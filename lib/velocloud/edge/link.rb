@@ -6,7 +6,7 @@ module VeloCloud
       include ActiveAttr::Model
 
       attribute :id, type: Integer
-      attribute :created, type: String
+      attribute :created, type: DateTime
       attribute :edge_id, type: Integer
       attribute :logical_id, type: String
       attribute :internal_id, type: String
@@ -37,7 +37,7 @@ module VeloCloud
       attribute :operator_alerts_enabled, type: Integer
       # Enum: "IN_SERVICE", "OUT_OF_SERVICE", "HISTORICAL"
       attribute :service_state, type: String
-      attribute :modified, type: String
+      attribute :modified, type: DateTime
       attribute :service_groups, default: []
     end
   end

@@ -5,7 +5,7 @@ module VeloCloud
     include ActiveAttr::Model
 
     attribute :id, type: Integer
-    attribute :created, type: String
+    attribute :created, type: DateTime
     attribute :network_id, type: Integer
     attribute :gateway_pool_id, type: Integer
     attribute :alerts_enabled, type: Boolean
@@ -33,8 +33,8 @@ module VeloCloud
     attribute :network_id, type: Integer
     attribute :timezone, type: String
     attribute :locale, type: String
-    attribute :modified, type: String
+    attribute :modified, type: DateTime
     # Enterprise::Proxy
-    attribute :enterprise_proxy, Object
+    attribute :enterprise_proxy, type: Object
   end
 end
