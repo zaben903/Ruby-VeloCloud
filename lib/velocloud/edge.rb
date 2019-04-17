@@ -48,7 +48,7 @@ module VeloCloud
     attribute :software_version, type: String
     attribute :system_up_since, type: DateTime
     # Edge::Configuration
-    attribute :configuration
+    attribute :configurations, default: []
     # Enterprise
     attribute :enterprise
     # Edge::Link
@@ -60,11 +60,25 @@ module VeloCloud
 
     def configuration=(configuration)
       if configuration.is_a? Hash
-        super VeloCloud::Edge::Configuration.new configuration
+        self.configurations = [VeloCloud::Edge::Configuration.new(configuration)]
       elsif configuration.is_a? VeloCloud::Edge::Configuration
-        super configuration
+        self.configurations = [configuration]
       else
-        raise ArgumentError.new 'Expected a Hash or a VeloCloud::Edge::Configuration'
+        raise ArgumentError.new 'Expected a Hash or VeloCloud::Edge::Configuration'
+      end
+    end
+
+    def configurations=(configurations)
+      if configurations.is_a? Array
+        if configurations.first.is_a? Hash
+          super configurations.collect {|configuration| VeloCloud::Edge::Configuration.new(configuration)}
+        elsif configurations.is_a? VeloCloud::Edge::Configuration
+          super configurations
+        else
+          raise ArgumentError.new 'Expected a Array[Hash], Array[VeloCloud::Edge::Configuration]'
+        end
+      else
+        raise ArgumentError.new 'Expected a Array[Hash], Array[VeloCloud::Edge::Configuration]'
       end
     end
 
@@ -97,9 +111,24 @@ module VeloCloud
     end
 
     def self.get(params = {})
+      if params[:with] == :all
+        params[:with] = [:enterprise, :links, :recent_links, :site]
+        edge = VeloCloud::Edge.new VeloCloud::Query.request('/edge/getEdge', params)
+        edge.configurations = edge.get_configuration_stack
+        edge
+      else
+        VeloCloud::Edge.new VeloCloud::Query.request('/edge/getEdge', params)
+      end
+    end
+
+    def get(params = {})
       params[:with] = [:configuration, :enterprise, :links, :recent_links, :site] if params[:with] == [:all]
-      response = VeloCloud::Query.request('/edge/getEdge', params)
-      VeloCloud::Edge.new response
+      params[:id] = id
+      self.attributes = VeloCloud::Query.request('/edge/getEdge', params)
+    end
+
+    def get_configuration_stack
+      self.configurations = VeloCloud::Query.request '/edge/getEdgeConfigurationStack', edgeId: id
     end
 
     private

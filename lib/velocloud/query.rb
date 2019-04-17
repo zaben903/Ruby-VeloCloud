@@ -28,7 +28,7 @@ module VeloCloud
                       body: body.to_json
 
       body = JSON.parse(response.body, symbolize_names: true).to_snake_keys
-      if body[:error] || !(response.code >= 200 && response.code < 400)
+      if (body.is_a?(Hash) && body[:error].present?) || !(response.code >= 200 && response.code < 400)
         raise RequestFailed.new(body[:error][:code], body[:error][:message])
       end
 

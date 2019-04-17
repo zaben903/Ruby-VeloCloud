@@ -13,8 +13,8 @@ module VeloCloud
         attribute :type, type: String
         attribute :description, type: String
         attribute :configuration_id, type: Integer
-        attribute :data, type: Object
-        attribute :refs, type: Object
+        attribute :data
+        attribute :refs
       end
     end
   end
