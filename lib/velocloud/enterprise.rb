@@ -36,5 +36,24 @@ module VeloCloud
     attribute :modified, type: DateTime
     # Enterprise::Proxy
     attribute :enterprise_proxy, type: Object
+
+    def self.get(params = {})
+      VeloCloud::Enterprise.new VeloCloud::Query.request('/enterprise/getEnterprise', params)
+    end
+
+    def get(params = {})
+      params[:id] = id
+      self.attributes = VeloCloud::Query.request('/edge/getEdge', params)
+    end
+
+    def edges(params = {})
+      params[:enterpriseId] = id
+      response = VeloCloud::Query.request('/enterprise/getEnterpriseEdges', params)
+      edges = []
+      response.each do |res|
+        edges << VeloCloud::Edge.new(res)
+      end
+      edges
+    end
   end
 end
