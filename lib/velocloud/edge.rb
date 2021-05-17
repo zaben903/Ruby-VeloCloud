@@ -47,6 +47,7 @@ module VeloCloud
     attribute :software_updated, type: DateTime
     attribute :software_version, type: String
     attribute :system_up_since, type: DateTime
+    # TODO: Remove this attribute once modules have been defined
     # Edge::Configuration
     attribute :configurations, default: []
     # Enterprise
@@ -57,6 +58,8 @@ module VeloCloud
     attribute :recent_links, default: []
     # Edge::Site
     attribute :site
+    # Array[VeloCloud::Edge::Configuration::DeviceSettings]
+    attribute :device_settings
 
     def configuration=(configuration)
       if configuration.is_a? Hash
@@ -71,6 +74,11 @@ module VeloCloud
     def configurations=(configurations)
       if configurations.is_a? Array
         if configurations.first.is_a? Hash
+          configurations.each do |c|
+            c[:modules].each do |m|
+              self.device_settings = VeloCloud::Edge::Configuration::DeviceSettings.new(m) if m[:name] == 'deviceSettings'
+            end
+          end
           super configurations.collect {|configuration| VeloCloud::Edge::Configuration.new(configuration)}
         elsif configurations.is_a? VeloCloud::Edge::Configuration
           super configurations
@@ -110,11 +118,31 @@ module VeloCloud
       end
     end
 
+    def device_settings=(settings)
+      self.device_settings.nil? ? device_settings = [] : device_settings = self.device_settings
+      settings = VeloCloud::Edge::Configuration::DeviceSettings.new(settings) unless settings.is_a? VeloCloud::Edge::Configuration::DeviceSettings
+
+      index = nil
+      unless settings.id.nil?
+        device_settings.each_with_index do |ds, i|
+          index = i if ds.id == settings.id
+        end
+      end
+
+      if index.nil?
+        device_settings << settings
+      else
+        device_settings[index] = settings
+      end
+
+      super device_settings
+    end
+
     def self.get(params = {})
       if params[:with] == :all
         params[:with] = [:enterprise, :links, :recent_links, :site]
         edge = VeloCloud::Edge.new VeloCloud::Query.request('/edge/getEdge', params)
-        edge.configurations = edge.get_configuration_stack
+        edge.configurations = edge.configuration_stack
         edge
       else
         VeloCloud::Edge.new VeloCloud::Query.request('/edge/getEdge', params)
@@ -122,13 +150,32 @@ module VeloCloud
     end
 
     def get(params = {})
-      params[:with] = [:configuration, :enterprise, :links, :recent_links, :site] if params[:with] == [:all]
+      params[:with] = %i[configuration enterprise links recent_links site] if params[:with] == [:all]
       params[:id] = id
       self.attributes = VeloCloud::Query.request('/edge/getEdge', params)
     end
 
-    def get_configuration_stack
+    def configuration_stack
       self.configurations = VeloCloud::Query.request '/edge/getEdgeConfigurationStack', edgeId: id
+    end
+
+    # {
+    #   "interval": {
+    #     "end": "2019-11-08T07:38:59.079Z",
+    #     "start": "2019-11-08T07:38:59.079Z"
+    #   },
+    #   "metrics": [
+    #     "bytesRx"
+    #   ],
+    #   "sort": "bytesRx",
+    #   "limit": 0,
+    #   "links": [
+    #     0
+    #   ]
+    # }
+    def link_metrics(params = {})
+      params[:edgeId] = id
+      VeloCloud::Query.request '/metrics/getEdgeLinkMetrics', params
     end
 
     private
@@ -147,6 +194,10 @@ module VeloCloud
       else
         raise ArgumentError.new 'Expected an Array[VeloCloud::Edge::Link] or VeloCloud::Edge::Link'
       end
+    end
+
+    def configuration_modules(modules = [])
+      VeloCloud::Query.request '/edge/getEdgeConfigurationModules', edgeId: id, modules: modules
     end
   end
 end

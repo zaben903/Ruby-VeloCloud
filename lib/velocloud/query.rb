@@ -10,14 +10,24 @@ module VeloCloud
 
     def self.authenticate
       response = post '/login/enterpriseLogin',
-                           body: {
-                               username: VeloCloud.configuration.username,
-                               password: VeloCloud.configuration.password
-                           }
+                      body: {
+                        username: VeloCloud.configuration.username,
+                        password: VeloCloud.configuration.password
+                      }
       cookie = HTTParty::CookieHash.new
       response.headers.get_fields('Set-Cookie').each { |c| cookie.add_cookies(c) }
       # TODO: Raise error if sign in fails
       cookie
+    end
+
+    def self.logout
+      response = post '/logout',
+                           headers: { Cookie: VeloCloud.auth.cookie_string }
+      if response.code != 200 || response.code != 302
+        raise RequestFailed.new(response.code, '')
+      end
+
+      true
     end
 
     def self.request(url, body = {})

@@ -48,12 +48,23 @@ module VeloCloud
 
     def edges(params = {})
       params[:enterpriseId] = id
+      params[:with] = [:enterprise, :links, :recent_links, :site] if params[:with] == :all
       response = VeloCloud::Query.request('/enterprise/getEnterpriseEdges', params)
       edges = []
       response.each do |res|
-        edges << VeloCloud::Edge.new(res)
+        if params[:with] == :all
+          edge = VeloCloud::Edge.new res
+          edge.configurations = edge.configuration_stack
+          edges << edge
+        else
+          edges << VeloCloud::Edge.new(res)
+        end
       end
       edges
+    end
+
+    def addresses
+      VeloCloud::Query.request('/enterprise/getEnterprise', enterpriseId: id)
     end
   end
 end

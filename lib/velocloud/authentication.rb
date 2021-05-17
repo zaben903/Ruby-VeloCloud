@@ -17,9 +17,7 @@ module VeloCloud
     end
 
     def validate_cookie!
-      if @cookie.empty?
-        VeloCloud.authenticate
-      end
+      VeloCloud.authenticate if @cookie.empty?
     end
   end
 end
