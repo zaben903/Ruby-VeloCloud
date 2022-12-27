@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'rake', '~> 13.0'
   spec.add_development_dependency 'rspec', '~> 3.0'
   spec.add_runtime_dependency 'httparty', '~> 0.16.4'
-  spec.add_runtime_dependency 'active_attr', '~> 0.13.0'
+  spec.add_runtime_dependency 'active_attr', '>= 0.13', '< 0.16'
   spec.add_runtime_dependency 'plissken', '~> 1.3.0'
   spec.add_runtime_dependency 'awrence', '~> 1.1.1'
 end
